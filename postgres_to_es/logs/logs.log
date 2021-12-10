@@ -2435,3 +2435,24 @@ TypeError: 'NoneType' object is not iterable
 2021-12-11 01:25:47.618 | INFO     | ETL.etl:extract:36 - Обновленные данные загружены
 2021-12-11 01:25:47.618 | INFO     | ETL.etl:transform:44 - Данные состояния загружены
 2021-12-11 01:25:47.618 | INFO     | postgres_to_es.es.es:get_all_indexes_names:34 - Получаем все индексы
+2021-12-11 01:38:10.858 | INFO     | postgres_to_es.es.es:__init__:15 - Подключение выполнено
+2021-12-11 01:38:10.859 | INFO     | ETL.etl:extract:25 - Выпоняется подключение к БД
+2021-12-11 01:38:10.898 | INFO     | ETL.etl:extract:28 - Подключение выполнено
+2021-12-11 01:38:10.914 | INFO     | postgres_to_es.postgres.data_from_sql:extract_data_from_movies:109 - SQL запрос выполнен
+2021-12-11 01:38:10.915 | INFO     | ETL.etl:extract:36 - Обновленные данные загружены
+2021-12-11 01:38:10.915 | INFO     | ETL.etl:transform:44 - Данные состояния загружены
+2021-12-11 01:38:10.915 | INFO     | postgres_to_es.es.es:get_all_indexes_names:34 - Получаем все индексы
+2021-12-11 01:38:15.836 | INFO     | postgres_to_es.es.es:__init__:15 - Подключение выполнено
+2021-12-11 01:38:15.836 | INFO     | ETL.etl:extract:25 - Выпоняется подключение к БД
+2021-12-11 01:38:15.848 | INFO     | ETL.etl:extract:28 - Подключение выполнено
+2021-12-11 01:38:15.860 | INFO     | postgres_to_es.postgres.data_from_sql:extract_data_from_movies:109 - SQL запрос выполнен
+2021-12-11 01:38:15.860 | INFO     | ETL.etl:extract:36 - Обновленные данные загружены
+2021-12-11 01:38:15.860 | INFO     | ETL.etl:transform:44 - Данные состояния загружены
+2021-12-11 01:38:15.861 | INFO     | postgres_to_es.es.es:get_all_indexes_names:34 - Получаем все индексы
+2021-12-11 01:38:20.834 | INFO     | postgres_to_es.es.es:__init__:15 - Подключение выполнено
+2021-12-11 01:38:20.834 | INFO     | ETL.etl:extract:25 - Выпоняется подключение к БД
+2021-12-11 01:38:20.847 | INFO     | ETL.etl:extract:28 - Подключение выполнено
+2021-12-11 01:38:20.864 | INFO     | postgres_to_es.postgres.data_from_sql:extract_data_from_movies:109 - SQL запрос выполнен
+2021-12-11 01:38:20.864 | INFO     | ETL.etl:extract:36 - Обновленные данные загружены
+2021-12-11 01:38:20.865 | INFO     | ETL.etl:transform:44 - Данные состояния загружены
+2021-12-11 01:38:20.865 | INFO     | postgres_to_es.es.es:get_all_indexes_names:34 - Получаем все индексы
