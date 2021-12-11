@@ -2,7 +2,7 @@ import os
 import json
 
 from typing import Union, Any, Optional
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 from loguru import logger
 from postgres_to_es.config import FILE_PATH_INDEX_BODY
 
@@ -38,9 +38,10 @@ class ElasticSearch:
         logger.warning(f'Удаляем индекс {index_name}')
         return self.es.indices.delete(index=index_name, ignore=[400, 404])
 
-    def insert_values_to_es(self, index_name: str, id_: str, body: dict):
-        logger.info(f'Добавляем значение в ES {index_name}, {id_}')
-        return self.es.index(index=index_name, id=id_, document=body)
+    def insert_values_to_es(self, data_inserts: list) -> None:
+        logger.warning(f'Добавляем {len(data_inserts)} значений в ES')
+        helpers.bulk(self.es, data_inserts)
+        logger.info(f'Добавлны значения в ES')
 
     @staticmethod
     def get_body_from_json_file(file_path: str = FILE_PATH_INDEX_BODY) -> Optional[Any]:

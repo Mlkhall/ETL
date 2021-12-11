@@ -2,7 +2,7 @@ import psycopg2.extras
 import psycopg2
 
 from psycopg2.extensions import connection as _connection
-from typing import Union, Optional
+from typing import Union
 from postgres_to_es.postgres.data import ESData
 from loguru import logger
 
@@ -59,8 +59,8 @@ class PostgresSaver:
                     return process_funcs['actors_writers'](element[name_element])
                 elif name_element in ['genre', 'director', 'actors_names', 'writers_names']:
                     return process_funcs['writers_names_actors_names_director_genre'](element[name_element])
-                else:
-                    return element[name_element]
+
+                return element[name_element]
 
             while (current_value := cursor.fetchone()) is not None:
                 dict_current_value = dict(current_value)
@@ -78,31 +78,45 @@ class PostgresSaver:
 
         sql_request = \
             f"""
-                        
+                 
+            WITH all_perosn AS (
+                                SELECT id
+                                FROM movies_test.content.person
+                                WHERE updated_at > '{date_start}'
+                                ORDER BY updated_at
+                                ),
+                                 all_films AS(
+                                    SELECT fw.id AS id
+                                    FROM movies_test.content.film_work fw
+                                    LEFT JOIN movies_test.content.person_film_work pfw ON pfw.film_work_id = fw.id
+                                    WHERE pfw.person_id IN (SELECT id FROM all_perosn)
+                                    ORDER BY fw.updated_at
+                                 )
+        
             SELECT
-                fw.id as id,
-                fw.rating as imdb_rating,
-                ARRAY_AGG(DISTINCT g.name ) AS genre,
-                fw.title as title,
-                fw.description as description,
-                ARRAY_AGG(DISTINCT p.full_name )
-                    FILTER ( WHERE pfw.role = 'director' ) AS director,
-                ARRAY_AGG(DISTINCT p.full_name)
-                    FILTER ( WHERE pfw.role = 'actor' ) AS actors_names,
-                ARRAY_AGG(DISTINCT p.full_name)
-                    FILTER ( WHERE pfw.role = 'writer' ) AS writers_names,
-                ARRAY_AGG(DISTINCT (p.id, p.full_name))
-                    FILTER ( WHERE pfw.role = 'actor' ) AS actors,
-                ARRAY_AGG(DISTINCT (p.id, p.full_name))
-                    FILTER ( WHERE pfw.role = 'writer' ) AS writers
-            
-            FROM movies_test.content.film_work fw
-            LEFT JOIN movies_test.content.person_film_work pfw ON pfw.film_work_id = fw.id
-            LEFT JOIN movies_test.content.person p ON p.id = pfw.person_id
-            LEFT JOIN movies_test.content.genre_film_work gfw ON gfw.film_work_id = fw.id
-            LEFT JOIN movies_test.content.genre g ON g.id = gfw.genre_id
-            WHERE fw.updated_at > '{date_start}'
-            GROUP BY fw.id;
+                    fw.id as id,
+                    fw.rating as imdb_rating,
+                    ARRAY_AGG(DISTINCT g.name ) AS genre,
+                    fw.title as title,
+                    fw.description as description,
+                    ARRAY_AGG(DISTINCT p.full_name )
+                        FILTER ( WHERE pfw.role = 'director' ) AS director,
+                    ARRAY_AGG(DISTINCT p.full_name)
+                        FILTER ( WHERE pfw.role = 'actor' ) AS actors_names,
+                    ARRAY_AGG(DISTINCT p.full_name)
+                        FILTER ( WHERE pfw.role = 'writer' ) AS writers_names,
+                    ARRAY_AGG(DISTINCT (p.id, p.full_name))
+                        FILTER ( WHERE pfw.role = 'actor' ) AS actors,
+                    ARRAY_AGG(DISTINCT (p.id, p.full_name))
+                        FILTER ( WHERE pfw.role = 'writer' ) AS writers
+    
+                FROM movies_test.content.film_work fw
+                LEFT JOIN movies_test.content.person_film_work pfw ON pfw.film_work_id = fw.id
+                LEFT JOIN movies_test.content.person p ON p.id = pfw.person_id
+                LEFT JOIN movies_test.content.genre_film_work gfw ON gfw.film_work_id = fw.id
+                LEFT JOIN movies_test.content.genre g ON g.id = gfw.genre_id
+                WHERE fw.id IN (SELECT id FROM all_films)
+                GROUP BY fw.id;
             """
         self.cursor.execute(sql_request)
 

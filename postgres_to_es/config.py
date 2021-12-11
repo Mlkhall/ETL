@@ -14,3 +14,5 @@ if load_dotenv('.env'):
            'password': os.environ.get('PASSWORD'),
            'host': os.environ.get('HOST', '127.0.0.1'),
            'port': os.environ.get('PORT', 5432)}
+
+    DEBUG = os.environ.get('DEBUG', True)

@@ -4,7 +4,8 @@ import backoff
 import psycopg2.errors
 import datetime
 
-from typing import Union
+from pprint import pp
+from typing import Union, Any
 from loguru import logger
 from postgres_to_es.postgres.data_from_sql import PostgresSaver
 from postgres_to_es.es.es import ElasticSearch
@@ -14,6 +15,7 @@ from postgres_to_es.config import FILE_PATH_INDEX_BODY, FILE_PATH_STATE, INDEX_N
 
 class ETL:
     def __init__(self, options: dict = dsl):
+        self.new_records_id = []
         self.options = options
         self.elastic = ElasticSearch()
         self.json_file_storage = JsonFileStorage(file_path=FILE_PATH_STATE)
@@ -31,20 +33,39 @@ class ETL:
             logger.warning("Нет времени последнего изменения, считываем все данные")
             return {el.__dict__['id']: el.__dict__ for el in postgres.extract_data_from_movies()}
 
-        else:
-            update_date = postgres.extract_data_from_movies(date_start=data_start)
-            logger.info("Обновленные данные загружены")
-            if not update_date:
-                logger.warning('Обновлений нет, получен пустой словарь')
-            return {el.__dict__['id']: el.__dict__ for el in update_date}
+        update_date = postgres.extract_data_from_movies(date_start=data_start)
+        logger.info("Обновленные данные загружены")
+        if not update_date:
+            logger.warning('Обновлений нет, получен пустой словарь')
+
+        return {el.__dict__['id']: el.__dict__ for el in update_date}
 
     @logger.catch
     def transform(self, state: dict) -> None:
-        self.json_file_storage.save_state(state=state)
-        logger.info("Данные состояния загружены")
+        storage = State(storage=self.json_file_storage)
+        local_state = storage.state
+        if local_state is None:
+            self.json_file_storage.save_state(state=state)
+            logger.info(f"Все данные состояния загружены в файл состояния {FILE_PATH_STATE}")
+        else:
+            storage_ids = tuple(local_state.keys())
+            if not state:
+                logger.warning('Нет новых данных для записи в Файл состояния')
+            else:
+                logger.info('Есть новые данные')
+                for id_current in state:
+                    self.new_records_id.append(id_current)
+                    if id_current in storage_ids:
+                        logger.warning(f"Обновляем значение в файле состояния, id={id_current}")
+                        storage.set_state(key=id_current, value=state[id_current])
+                        logger.info(f"Обновлено значение в файле состояния, id={id_current}")
+                    else:
+                        logger.warning(f"Добавляем значение в файл состояния, id={id_current}")
+                        storage.set_state(key=id_current, value=state[id_current])
+                        logger.info(f"Добавлено значение в файл состояния, id={id_current}")
 
     @logger.catch
-    def load(self):
+    def load(self) -> Union[Any, None]:
         all_indexes = self.elastic.get_all_indexes_names()
         if INDEX_NAME not in all_indexes:
             if os.path.exists(FILE_PATH_INDEX_BODY):
@@ -57,12 +78,29 @@ class ETL:
         if os.path.exists(FILE_PATH_STATE):
             state = State(storage=self.json_file_storage)
             state_data = state.state
-            for id_raw in state_data:
-                row = state_data[id_raw]
-                self.elastic.insert_values_to_es(index_name=INDEX_NAME, id_=id_raw, body=row)
-                logger.info(f"Записано значение в EL для {id_raw}")
+
+            raws_es = self.__transform_data_for_es(state_data=state_data, records_id=self.new_records_id)
+            if raws_es:
+                self.elastic.insert_values_to_es(data_inserts=raws_es)
         else:
             return logger.warning("Отсутсвует файл состояния")
+
+    @staticmethod
+    def __transform_data_for_es(state_data: dict, records_id: list) -> Union[list, None]:
+        if records_id:
+            raws_es = []
+            for id_raw in state_data:
+                if id_raw in records_id:
+                    record = {
+                        "_index": INDEX_NAME,
+                        "_id": id_raw,
+                        "_source": state_data[id_raw]
+                    }
+                    raws_es.append(record)
+            return raws_es
+
+        logger.warning('Нет новых записей для ES')
+        return None
 
 
 def modification_date(filename: str) -> str:

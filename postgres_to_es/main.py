@@ -1,7 +1,7 @@
 import os
 from loguru import logger
 
-from config import FILE_PATH_STATE, SHED_INTERVAL
+from config import FILE_PATH_STATE, SHED_INTERVAL, DEBUG
 from ETL.etl import ETL, modification_date
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -23,13 +23,15 @@ def main():
 
 if __name__ == '__main__':
     logger.add('logs/logs.log', level='DEBUG', retention='1 days')
-
-    scheduler = BackgroundScheduler(timezone="Europe/Moscow")
-    scheduler.start()
-    try:
-        scheduler.add_job(main, 'interval', seconds=SHED_INTERVAL, id='ETL')
-    except KeyboardInterrupt:
-        scheduler.shutdown()
+    if DEBUG:
+        main()
+    else:
+        scheduler = BackgroundScheduler(timezone="Europe/Moscow")
+        scheduler.start()
+        try:
+            scheduler.add_job(main, 'interval', seconds=SHED_INTERVAL, id='ETL')
+        except KeyboardInterrupt:
+            scheduler.shutdown()
 
 
 
